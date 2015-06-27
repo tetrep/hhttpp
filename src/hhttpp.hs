@@ -1,64 +1,67 @@
 import Text.ParserCombinators.Parsec
 
+data HTTPRequest = HTTPRequest { _verb :: String, _path :: String, request_version :: String, request_body :: HTTPBody } deriving Show
+
+data HTTPResponse = HTTPResponse { _response_version :: String, _status_code :: Int,  _status_msg :: String, response_body :: HTTPBody } deriving Show
+
+data HTTPBody = HTTPBody { } deriving Show
+
 -- TODO properly support \r\n
-http_msg :: GenParser Char st [[String]]
-http_msg =
-  do result <- http_first_line
-     many http_msg_header
-     http_msg_body
-     end_of_http_msg
-     return result
+http_request :: GenParser Char st HTTPRequest
+http_request =
+     http_request_verb >>= (\verb ->
+     http_request_path >>= (\path ->
+     -- http_request_parameters
+     http_msg_version >>= (\version ->
+     many http_msg_header >>
+     http_msg_body >>
+     end_of_http_msg >>
+     return HTTPRequest { _verb = verb, _path = path, request_version = version, request_body = undefined })))
 
-http_first_line :: GenParser Char st [[String]]
-http_first_line = http_first_line_response <|> http_first_line_request
-
--- somehow say it can only be one line
-http_first_line_request :: GenParser Char st [[String]]
-http_first_line_request =
-  do result <- http_request_verb
-    http_request_path
-    http_request_version
+end_of_http_msg = undefined
+http_request_parameters = undefined
 
 http_first_line_response :: GenParser Char st [[String]]
 http_first_line_response =
-  do result <- http_msg_version
-    http_response_status_code
-    http_response_status_msg
+  do http_msg_version
+     http_response_status_code
+     http_response_status_msg
+     return []
 
-http_request_verb :: GenParser Char st [String]
+http_request_verb :: GenParser Char st String
 http_request_verb = many (noneOf " ")
 
-http_request_path :: GenParser Char st [String]
+http_request_path :: GenParser Char st String
 http_request_path = many (noneOf " ?")
 
-http_msg_version :: GenParser Char st [String]
+http_msg_version :: GenParser Char st String
 http_msg_version = many (noneOf " \n")
 
-http_response_status_code :: GenParser Char st [String]
-http_response_status_code = many (noneOf " ")
+http_response_status_code :: GenParser Char st Int
+http_response_status_code = many (noneOf " ") >> return 0
 
 http_response_status_msg :: GenParser Char st [String]
-http_response_status_msg = many (noneOf "\n")
+http_response_status_msg = many (noneOf "\n") >> return []
 
 http_msg_header :: GenParser Char st [String]
 http_msg_header =
-  do key <- http_header_key
-     val <- http_header_val
-     return (key : val)
+  do key <- http_msg_header_key
+     val <- http_msg_header_val
+     return [] -- (key : val)
 
 http_msg_header_key :: GenParser Char st [String]
-http_msg_header_key = many (noneOf ":\n")
+http_msg_header_key = many (noneOf ":\n") >> return []
 
 http_msg_header_val :: GenParser Char st [String]
-http_msg_header_val = many (noneOf "\n")
+http_msg_header_val = many (noneOf "\n") >> return []
 
 http_msg_body :: GenParser Char st [String]
-http_msg_body = many (noneOf "foo")
+http_msg_body = many (noneOf "foo") >> return []
 
 eom :: GenParser Char st [String]
-eom = char '\n'
+eom = char '\n' >> return []
 
-main = print (http_msg "GET / HTTP/1.1\nHost: foo.bar.com\nContent-Type: delicious\nContent-Length: 5\n\n")
+main = print (parse http_request "sourcename" "GET / HTTP/1.1\nHost: foo.bar.com\nContent-Type: delicious\nContent-Length: 5\n\n")
 
 {-
 {- A CSV file contains 0 or more lines, each of which is terminated
