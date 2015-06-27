@@ -1,29 +1,59 @@
 import Text.ParserCombinators.Parsec
+import Text.Show.Pretty
 
-data HTTPRequest = HTTPRequest { verb :: String, path :: String, request_version :: String, query_params :: [(String, String)], request_body :: HTTPBody } deriving Show
+data HTTPRequestHead = HTTPRequestHead {
+  verb :: String,
+  path :: String,
+  query_params :: [(String, Maybe String)],
+  request_version :: String
+} deriving Show
 
-data HTTPResponse = HTTPResponse { response_version :: String, status_code :: Int,  status_msg :: String, response_body :: HTTPBody } deriving Show
+data HTTPRequest = HTTPRequest {
+  head_head :: HTTPRequestHead,
+  headers :: [(String, Maybe String)],
+  body :: String
+} deriving Show
+
+data HTTPResponseHead = HTTPResponseHead {
+  http_response_version :: String,
+  status_code :: Int,
+  status_msg :: String
+} deriving Show
+
+data HTTPResponse = HTTPResponse {
+  http_response_head :: HTTPResponseHead,
+  http_response_headers :: [(String, Maybe String)],
+  http_response_body :: String
+} deriving Show
 
 data HTTPBody = HTTPBody { } deriving Show
 
--- TODO properly support \r\n
+consume_spaces :: Parser String
+consume_spaces = many (char ' ')
+
+consume_eol :: Parser String
+consume_eol = string "\r\n" <|> string "\n"
+
 http_request :: Parser HTTPRequest
 http_request =
-     http_request_verb >>= (\verb' ->
-     http_request_path >>= (\path' ->
-     http_request_query_params >>= (\qp ->
-     -- http_request_parameters
-     http_msg_version >>= (\version ->
-     return HTTPRequest { verb = verb', path = path', query_params = qp, request_version = version, request_body = undefined }))))
+  http_request_head >>= (\head' ->
+  consume_eol >>
+  many http_msg_header >>= (\headers' ->
+  consume_eol >>
+  option "" http_msg_body >>= (\body' ->
+  return HTTPRequest { head_head = head', headers = headers', body = body' } )))
+  
 
-end_of_http_msg = undefined
-
-http_first_line_response :: Parser [[String]]
-http_first_line_response =
-  do http_msg_version
-     http_response_status_code
-     http_response_status_msg
-     return []
+http_request_head :: Parser HTTPRequestHead
+http_request_head =
+  http_request_verb >>= (\verb' ->
+  consume_spaces >>
+  http_request_path >>= (\path' ->
+  consume_spaces >>
+  option [] http_request_query_params >>= (\qp ->
+  consume_spaces >>
+  http_msg_version >>= (\version ->
+  return HTTPRequestHead { verb = verb', path = path', query_params = qp, request_version = version } ))))
 
 http_request_verb :: Parser String
 http_request_verb = many (noneOf " ")
@@ -31,17 +61,14 @@ http_request_verb = many (noneOf " ")
 http_request_path :: Parser String
 http_request_path = many (noneOf " ?")
 
-http_request_query_params :: Parser [(String, String)]
+http_request_query_params :: Parser [(String, Maybe String)]
 http_request_query_params = char '?' >> http_request_parameters
 
-http_request_parameters :: Parser [(String, String)]
-http_request_parameters = many (parse_one_pair <* oneOf "&;")
-    where
-        parse_one_pair :: Parser (String, String)
-        parse_one_pair = many (noneOf " =") >>= (\key ->
-                         many (noneOf " &;") >>= (\val ->
-                         return (key, val)))
-    
+http_request_parameters :: Parser [(String, Maybe String)]
+http_request_parameters = parse_one_pair >>= (\first -> fmap (first:) ((many1 (oneOf "&;") >> http_request_parameters) <|> return []))
+  where
+    parse_one_pair :: Parser (String, Maybe String)
+    parse_one_pair = many (noneOf " =&;") >>= (\key -> option (key , Nothing) (char '=' >> many (noneOf " &;") >>= (\val -> return (key, Just val))))
 
 http_msg_version :: Parser String
 http_msg_version = many (noneOf " \n")
@@ -49,28 +76,32 @@ http_msg_version = many (noneOf " \n")
 http_response_status_code :: Parser Int
 http_response_status_code = many (noneOf " ") >> return 0
 
-http_response_status_msg :: Parser [String]
+http_response_status_msg :: Parser String
 http_response_status_msg = many (noneOf "\n") >> return []
 
-http_msg_header :: Parser [String]
+http_msg_header :: Parser (String, Maybe String)
 http_msg_header =
-  do key <- http_msg_header_key
-     val <- http_msg_header_val
-     return [] -- (key : val)
+  http_msg_header_key >>= (\key ->
+  http_msg_header_val >>= (\val ->
+  consume_eol >>
+  return (key, val)))
 
-http_msg_header_key :: Parser [String]
-http_msg_header_key = many (noneOf ":\n") >> return []
+http_msg_header_key :: Parser String
+http_msg_header_key = many1 (noneOf ":\r\n")
 
-http_msg_header_val :: Parser [String]
-http_msg_header_val = many (noneOf "\n") >> return []
+http_msg_header_val :: Parser (Maybe String)
+http_msg_header_val = option Nothing (fmap Just (char ':' >> consume_spaces >> many (noneOf ":\r\n")))
 
-http_msg_body :: GenParser Char st [String]
+http_msg_body :: Parser String
 http_msg_body = many (noneOf "foo") >> return []
 
 eom :: GenParser Char st [String]
 eom = char '\n' >> return []
 
-main = print (parse http_request "sourcename" "GET / HTTP/1.1\nHost: foo.bar.com\nContent-Type: delicious\nContent-Length: 5\n\n")
+main :: IO ()
+--main = print (parse http_request "sourcename" "GET /foo?a=b&c=d;e=f&;x;;y HTTP/1.1\nHost: foo.bar.com\nContent-Type: delicious\nContent-Length: 5\n\n")
+main = putStrLn . ppShow =<< parse http_request "sourcename" <$> (readFile "example_http_msg/request1.txt") >>
+  putStrLn . ppShow =<< parse http_response "sourcename" <$> (readFile "example_http_msg/response1.txt")
 
 {-
 {- A CSV file contains 0 or more lines, each of which is terminated
