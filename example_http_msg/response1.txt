@@ -1,0 +1,9 @@
+HTTP/1.1 301 Moved Permanently
+x-amz-id-2: XuSMcP17Kq0C0b8sw7uhdGznVc0SsjZTWVHFkp8db1Xp9eGbXH2+bLHj8dcXlnbcVH8j1mkHN5A=
+x-amz-request-id: 12B4143A94B9840F
+Date: Sat, 27 Jun 2015 00:32:36 GMT
+Location: https://www.nccgroup.trust/us/our-services/security-consulting/
+Content-Length: 0
+Server: AmazonS3
+
+
