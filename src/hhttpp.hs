@@ -41,7 +41,7 @@ http_request =
   consume_eol >>
   many http_msg_header >>= (\headers' ->
   consume_eol >>
-  option "" http_msg_body >>= (\body' ->
+  option "" (http_msg_body 0) >>= (\body' ->
   return HTTPRequest { head_head = head', headers = headers', body = body' } )))
 
 http_request_head :: Parser HTTPRequestHead
@@ -61,7 +61,7 @@ http_response =
   consume_eol >>
   many http_msg_header >>= (\headers' ->
   consume_eol >>
-  option "" http_msg_body >>= (\body' ->
+  option "" (http_msg_body 0) >>= (\body' ->
   return HTTPResponse { head_head_head = head', headers_headers = headers', body_body = body' } )))
 
 http_response_head :: Parser HTTPResponseHead
@@ -110,8 +110,8 @@ http_msg_header_key = many1 (noneOf ":\r\n")
 http_msg_header_val :: Parser (Maybe String)
 http_msg_header_val = option Nothing (fmap Just (char ':' >> consume_spaces >> many (noneOf "\r\n")))
 
-http_msg_body :: Parser String
-http_msg_body = many (noneOf "foo") >> return []
+http_msg_body :: Int -> Parser String
+http_msg_body n = count n anyToken
 
 main :: IO ()
 --main = print (parse http_request "sourcename" "GET /foo?a=b&c=d;e=f&;x;;y HTTP/1.1\nHost: foo.bar.com\nContent-Type: delicious\nContent-Length: 5\n\n")
