@@ -115,4 +115,4 @@ http_msg_body n = count n anyToken
 
 main :: IO ()
 --main = print (parse http_request "sourcename" "GET /foo?a=b&c=d;e=f&;x;;y HTTP/1.1\nHost: foo.bar.com\nContent-Type: delicious\nContent-Length: 5\n\n")
-main = putStrLn . ppShow =<< parse http_response "sourcename" <$> (readFile "example_http_msg/response1.txt")
+main = putStrLn . ppShow =<< parse http_response "sourcename" <$> (readFile "example_http_msg/response2.txt")
