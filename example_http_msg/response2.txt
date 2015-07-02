@@ -1,0 +1,13 @@
+HTTP/1.1 500 Internal Server Error
+Server: Apache-Coyote/1.1
+Strict-Transport-Security: max-age=31536000 ; includeSubDomains
+Content-Type: application/json;charset=UTF-8
+Vary: Accept-Encoding
+Date: Thu, 02 Jul 2015 22:54:49 GMT
+Connection: close
+Content-Length: 136
+
+{
+  "message" : "Not found",
+  "errorCode" : "NOT_FOUND"
+}
