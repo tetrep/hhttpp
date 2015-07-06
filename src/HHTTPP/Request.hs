@@ -1,7 +1,6 @@
 module HHTTPP.Request where
 
 import HHTTPP.Common
-import Data.Maybe (fromMaybe)
 import Text.ParserCombinators.Parsec
 
 data RequestHead = RequestHead {
