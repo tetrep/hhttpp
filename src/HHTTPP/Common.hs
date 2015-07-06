@@ -1,7 +1,10 @@
+{-# LANGUAGE OverloadedStrings #-}
 module HHTTPP.Common where
 
-import           Data.CaseInsensitive (CI, mk)
-import           Text.ParserCombinators.Parsec
+import Control.Monad (join)
+import Data.CaseInsensitive (CI, mk)
+import HHTTPP.Util (maybe_read)
+import Text.ParserCombinators.Parsec
 
 consume_spaces :: Parser String
 consume_spaces = many (char ' ')
@@ -28,3 +31,6 @@ parse_msg_header_val = option Nothing (fmap Just (char ':' >> consume_spaces >> 
 
 parse_msg_body :: Int -> Parser String
 parse_msg_body n = count n anyToken
+
+get_content_length :: [(CI String, Maybe String)] -> Maybe Int
+get_content_length headers = maybe_read =<< join (lookup "Content-Length" headers)

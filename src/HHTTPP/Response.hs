@@ -1,11 +1,8 @@
-{-# LANGUAGE OverloadedStrings #-}
 module HHTTPP.Response where
 
-import Control.Monad (join)
 import Data.CaseInsensitive (CI)
-import Data.Maybe (fromMaybe, listToMaybe)
+import Data.Maybe (fromMaybe)
 import HHTTPP.Common
-
 import Text.ParserCombinators.Parsec
 
 data ResponseHead = ResponseHead {
@@ -20,11 +17,6 @@ data Response = Response {
   body :: String
 } deriving Show
 
-maybe_read :: (Read a) => String -> Maybe a
-maybe_read = fmap fst . listToMaybe . reads
-
-get_content_length :: [(CI String, Maybe String)] -> Maybe Int
-get_content_length headers' = maybe_read =<< join (lookup "Content-Length" headers')
 
 parse_response :: Parser Response
 parse_response =
