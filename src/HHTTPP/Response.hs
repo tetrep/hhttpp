@@ -1,10 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 module HHTTPP.Response where
 
-import           Control.Monad (join)
-import           Data.CaseInsensitive (CI)
-import           Data.Maybe (fromMaybe, listToMaybe)
-import           HHTTPP.Common
+import Control.Monad (join)
+import Data.CaseInsensitive (CI)
+import Data.Maybe (fromMaybe, listToMaybe)
+import HHTTPP.Common
 
 import Text.ParserCombinators.Parsec
 
