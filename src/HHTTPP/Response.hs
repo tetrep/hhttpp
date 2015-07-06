@@ -1,7 +1,5 @@
 module HHTTPP.Response where
 
-import Data.CaseInsensitive (CI)
-import Data.Maybe (fromMaybe)
 import HHTTPP.Common
 import Text.ParserCombinators.Parsec
 
@@ -13,19 +11,16 @@ data ResponseHead = ResponseHead {
 
 data Response = Response {
   prehead :: ResponseHead,
-  headers :: [(CI String, Maybe String)],
+  headers :: [Header],
   body :: String
 } deriving Show
-
 
 parse_response :: Parser Response
 parse_response =
   parse_response_head >>= (\head' ->
   consume_eol >>
-  many parse_msg_header >>= (\headers' ->
-  consume_eol >>
-  option "" (parse_msg_body (fromMaybe 0 (get_content_length headers'))) >>= (\body' ->
-  return Response { prehead = head', headers = headers', body = body' } )))
+  parse_headers_and_body >>= (\(headers', body') ->
+  return Response { prehead = head', headers = headers', body = body' } ))
 
 parse_response_head :: Parser ResponseHead
 parse_response_head =

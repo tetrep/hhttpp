@@ -1,7 +1,6 @@
 module HHTTPP.Request where
 
 import HHTTPP.Common
-import Data.CaseInsensitive (CI)
 import Data.Maybe (fromMaybe)
 import Text.ParserCombinators.Parsec
 
@@ -14,7 +13,7 @@ data RequestHead = RequestHead {
 
 data Request = Request {
   prehead :: RequestHead,
-  headers :: [(CI String, Maybe String)],
+  headers :: [Header],
   body :: String
 } deriving Show
 
@@ -22,10 +21,8 @@ parse_request :: Parser Request
 parse_request =
   parse_request_head >>= (\head' ->
   consume_eol >>
-  many parse_msg_header >>= (\headers' ->
-  consume_eol >>
-  option "" (parse_msg_body (fromMaybe 0 (get_content_length headers'))) >>= (\body' ->
-  return Request { prehead = head', headers = headers', body = body' } )))
+  parse_headers_and_body >>= (\(headers', body') ->
+  return Request { prehead = head', headers = headers', body = body' } ))
 
 parse_request_head :: Parser RequestHead
 parse_request_head =

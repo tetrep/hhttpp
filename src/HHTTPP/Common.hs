@@ -3,8 +3,11 @@ module HHTTPP.Common where
 
 import Control.Monad (join)
 import Data.CaseInsensitive (CI, mk)
+import Data.Maybe (fromMaybe)
 import HHTTPP.Util (maybe_read)
 import Text.ParserCombinators.Parsec
+
+type Header = (CI String, Maybe String)
 
 consume_spaces :: Parser String
 consume_spaces = many (char ' ')
@@ -34,3 +37,10 @@ parse_msg_body n = count n anyToken
 
 get_content_length :: [(CI String, Maybe String)] -> Maybe Int
 get_content_length headers = maybe_read =<< join (lookup "Content-Length" headers)
+
+parse_headers_and_body:: Parser ([Header], String)
+parse_headers_and_body =
+  many parse_msg_header >>= (\headers ->
+  consume_eol >>
+  option "" (parse_msg_body (fromMaybe 0 (get_content_length headers))) >>= (\body ->
+  return (headers, body)))
