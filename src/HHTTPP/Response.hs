@@ -1,7 +1,7 @@
 module HHTTPP.Response where
 
 import HHTTPP.Common
-import Text.ParserCombinators.Parsec
+import Text.ParserCombinators.Parsec hiding (Parser)
 
 data ResponseHead = ResponseHead {
   http_version :: String,

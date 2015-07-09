@@ -1,7 +1,7 @@
 module HHTTPP.Request where
 
 import HHTTPP.Common
-import Text.ParserCombinators.Parsec
+import Text.ParserCombinators.Parsec hiding (Parser)
 
 data RequestHead = RequestHead {
   verb :: String,

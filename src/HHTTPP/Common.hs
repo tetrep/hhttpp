@@ -1,11 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 module HHTTPP.Common where
 
+import Data.ByteString (ByteString)
 import Control.Monad (join)
 import Data.CaseInsensitive (CI, mk)
 import Data.Maybe (fromMaybe)
 import HHTTPP.Util (maybe_read)
-import Text.ParserCombinators.Parsec
+import Text.ParserCombinators.Parsec hiding (Parser)
+import Text.Parsec
+
+type Parser = Parsec ByteString ()
 
 type Header = (CI String, Maybe String)
 
