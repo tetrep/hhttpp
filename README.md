@@ -3,6 +3,6 @@ An HTTP proxy written in Haskell. This is a smaller part of a bigger project to 
 
 ## TODO
 - [ ] hook up to pipeline, start actively using it to promote debugging
-- [√] have some semblance of functionality
-- [√] parse request content-length
-- [√] parse responses
+- [x] have some semblance of functionality
+- [x] parse request content-length
+- [x] parse responses
