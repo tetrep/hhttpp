@@ -26,7 +26,7 @@ parse_msg_header =
   return (key, val)))
 
 parse_msg_header_key :: Parser (CI String)
-parse_msg_header_key = mk <$> many (noneOf ":\r\n")
+parse_msg_header_key = fmap mk (many (noneOf ":\r\n"))
 
 parse_msg_header_val :: Parser String
 parse_msg_header_val = char ':' >> consume_spaces >> many (noneOf "\r\n")
