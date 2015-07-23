@@ -26,5 +26,7 @@ executable hhttpp
                      , case-insensitive
                      , bytestring
                      , lens
+                     , network
+                     , network-uri
   hs-source-dirs:      src
   default-language:    Haskell2010
