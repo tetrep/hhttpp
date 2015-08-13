@@ -1,20 +1,22 @@
 module HHTTPP.Response where
 
 import HHTTPP.Common
+import Data.ByteString (ByteString)
+import Data.ByteString.Char8 (pack)
 import Text.Parsec.ByteString (Parser)
 import Text.Parsec
 
 data ResponseHead = ResponseHead {
-  http_version :: String,
-  status_code :: String,
-  status_msg :: String
-} deriving Show
+  http_version :: ByteString,
+  status_code :: ByteString,
+  status_msg :: ByteString
+}
 
 data Response = Response {
   prehead :: ResponseHead,
   headers :: [Header],
-  body :: String
-} deriving Show
+  body :: ByteString
+}
 
 parse_response :: Parser Response
 parse_response =
@@ -32,8 +34,8 @@ parse_response_head =
   parse_status_msg >>= (\status_msg' ->
   return ResponseHead { http_version = version', status_code = status_code', status_msg = status_msg' } )))
 
-parse_status_code :: Parser String
-parse_status_code = many (noneOf " \r\n")
+parse_status_code :: Parser ByteString
+parse_status_code = fmap pack (many (noneOf " \r\n"))
 
-parse_status_msg :: Parser String
-parse_status_msg = many (noneOf "\r\n")
+parse_status_msg :: Parser ByteString
+parse_status_msg = fmap pack (many (noneOf "\r\n"))

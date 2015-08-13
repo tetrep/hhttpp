@@ -6,11 +6,13 @@ import Text.Parsec.ByteString (Parser, parseFromFile)
 import Text.Parsec (parse)
 import Text.Show.Pretty (ppShow)
 import Network (listenOn, PortID(..), PortNumber, Socket, connectTo, HostName)
-import Network.Socket (accept, connect, SockAddr(..), send, recv, socket, Family(..), SocketType(..), defaultProtocol, inet_addr)
+import Network.Socket (accept, connect, SockAddr(..), socket, Family(..), SocketType(..), defaultProtocol, inet_addr)
+import Network.Socket.ByteString (send, recv)
 import Network.URI (nullURI, parseAbsoluteURI, uriPath, uriAuthority, URIAuth(..))
 import Control.Concurrent (forkIO)
 import Data.Maybe (fromMaybe)
 import Data.String (fromString)
+import Data.ByteString.Char8 (unpack)
 import Control.Lens ((&))
 
 connection_loop :: Socket -> Socket -> IO ()
@@ -21,19 +23,20 @@ connection_loop src_socket dst_socket =
   connection_loop src_socket dst_socket)
 
 connection_with_head :: String -> PortNumber -> RequestHead -> Socket -> IO ()
-connection_with_head host port new_head in_socket =
+connection_with_head host_str port new_head in_socket =
   --connectTo host (PortNumber port) >>= (\handle_out ->
   socket AF_INET Stream defaultProtocol >>= (\out_socket ->
-  connect out_socket (SockAddrInet port (inet_addr host)) >>
-  send out_socket (show new_head) (length (show new_head)) >>
+  inet_addr host_str >>= (\host_addr ->
+  connect out_socket (SockAddrInet port host_addr) >>
+  send out_socket (show new_head) >>
   connection_loop in_socket out_socket >>
   connection_loop out_socket in_socket >>
-  return ())
+  return ()))
 
 connection_handler :: Socket -> IO ()
 connection_handler in_socket =
   read_http_line in_socket >>= (\(first_line, cdr_chunk) ->
-  parse parse_request_head "" (fromString first_line) & 
+  parse parse_request_head "" first_line & 
     either (undefined) (\request_head -> 
     let unparsed_uri = path request_head in
     let parsed_uri = fromMaybe nullURI (parseAbsoluteURI unparsed_uri) in

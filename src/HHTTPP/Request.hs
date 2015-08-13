@@ -5,18 +5,20 @@ import HHTTPP.Common
 import Text.Parsec.ByteString (Parser)
 import Text.Parsec
 import Data.List (intercalate)
+import Data.ByteString (ByteString, append)
+import Data.ByteString.Char8 (pack)
 
 data RequestHead = RequestHead {
-  verb :: String,
-  path :: String,
-  query_params :: [(String, Maybe String)],
-  request_version :: String
+  verb :: ByteString,
+  path :: ByteString,
+  query_params :: [(ByteString, Maybe ByteString)],
+  request_version :: ByteString
 }
 
 data Request = Request {
   prehead :: RequestHead,
   headers :: [Header],
-  body :: String
+  body :: ByteString
 }
 
 parse_request :: Parser Request
@@ -37,26 +39,26 @@ parse_request_head =
   parse_msg_version >>= (\version ->
   return RequestHead { verb = verb', path = path', query_params = qp, request_version = version } ))))
 
-parse_request_verb :: Parser String
-parse_request_verb = many (noneOf " ")
+parse_request_verb :: Parser ByteString
+parse_request_verb = fmap pack (many (noneOf " "))
 
-parse_request_path :: Parser String
-parse_request_path = many (noneOf " ?")
+parse_request_path :: Parser ByteString
+parse_request_path = fmap pack (many (noneOf " ?"))
 
-parse_request_query_params :: Parser [(String, Maybe String)]
+parse_request_query_params :: Parser [(ByteString, Maybe ByteString)]
 parse_request_query_params = char '?' >> parse_request_parameters
 
-parse_request_parameters :: Parser [(String, Maybe String)]
+parse_request_parameters :: Parser [(ByteString, Maybe ByteString)]
 parse_request_parameters = parse_one_pair >>= (\first -> fmap (first:) ((many1 (oneOf "&;") >> parse_request_parameters) <|> return []))
   where
-    parse_one_pair :: Parser (String, Maybe String)
+    parse_one_pair :: Parser (ByteString, Maybe ByteString)
     parse_one_pair = many (noneOf " =&;") >>= (\key -> option (key , Nothing) (char '=' >> many (noneOf " &;") >>= (\val -> return (key, Just val))))
 
-query_param_string :: [(String, Maybe String)] -> String
-query_param_string = intercalate "&" . map (\(key, maybe_value) -> key ++ maybe "" ('=':) maybe_value)
+query_param_string :: [(ByteString, Maybe ByteString)] -> ByteString
+query_param_string = fmap pack . intercalate "&" . map (\(key, maybe_value) -> key ++ maybe "" ('=':) maybe_value)
 
-instance Show RequestHead where
-  show RequestHead {..} = verb ++ " " ++ path ++ (query_param_string query_params) ++ " " ++ request_version
+instance Print_http RequestHead where
+  print_http RequestHead {..} = append verb (append (pack " ") (append path (append (query_param_string query_params) (append (pack " ") request_version))))
 
-instance Show Request where
-  show Request {..} = show prehead ++ concat (map show headers) ++ "\n" ++ body
+instance Print_http Request where
+  print_http Request {..} = append (print_http prehead) (append (concat (map print_http headers)) (append (pack "\n") body))
