@@ -1,12 +1,13 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards, OverloadedStrings #-}
 module HHTTPP.Request where
 
 import HHTTPP.Common
 import Text.Parsec.ByteString (Parser)
 import Text.Parsec
-import Data.List (intercalate)
-import Data.ByteString (ByteString, append)
-import Data.ByteString.Char8 (pack)
+import Data.ByteString (ByteString, append, concat, intercalate)
+import Data.ByteString.Char8 (pack, cons)
+
+import Prelude hiding (concat)
 
 data RequestHead = RequestHead {
   verb :: ByteString,
@@ -52,10 +53,10 @@ parse_request_parameters :: Parser [(ByteString, Maybe ByteString)]
 parse_request_parameters = parse_one_pair >>= (\first -> fmap (first:) ((many1 (oneOf "&;") >> parse_request_parameters) <|> return []))
   where
     parse_one_pair :: Parser (ByteString, Maybe ByteString)
-    parse_one_pair = many (noneOf " =&;") >>= (\key -> option (key , Nothing) (char '=' >> many (noneOf " &;") >>= (\val -> return (key, Just val))))
+    parse_one_pair = fmap pack (many (noneOf " =&;")) >>= (\key -> option (key, Nothing) (char '=' >> fmap pack (many (noneOf " &;")) >>= (\val -> return (key, Just val))))
 
 query_param_string :: [(ByteString, Maybe ByteString)] -> ByteString
-query_param_string = fmap pack . intercalate "&" . map (\(key, maybe_value) -> key ++ maybe "" ('=':) maybe_value)
+query_param_string = intercalate "&" . map (\(key, maybe_value) -> append key (maybe "" (cons '=') maybe_value))
 
 instance Print_http RequestHead where
   print_http RequestHead {..} = append verb (append (pack " ") (append path (append (query_param_string query_params) (append (pack " ") request_version))))
